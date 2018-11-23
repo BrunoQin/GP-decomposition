@@ -31,7 +31,7 @@ def stage1(l_r, scale=3, overlap=1/3, sl=20, sh=40):
         mu, var = m.predict_y(Xt)
 
         mu = np.reshape(mu, (sh - 2, sh - 2))
-        h_patch[1:-2, 1:-2] = mu
+        h_patch[1:-1, 1:-1] = mu
 
         h_b_patches[i] = h_patch
 

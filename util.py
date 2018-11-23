@@ -16,6 +16,7 @@ def get_set(patch):
     set = np.squeeze(set, 1)
     X = np.hstack((set[:, 0:4], set[:, 5:9]))
     y = set[:, 4]
+    y = np.reshape(y, (-1, 1))
     return X, y
 
 
