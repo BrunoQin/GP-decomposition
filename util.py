@@ -2,11 +2,11 @@ import numpy as np
 from sklearn.feature_extraction import image
 
 
-def get_patches(image, upper_left, s, h_patch_n, w_patch_n):
-    patches = [[0] * w_patch_n for i in range(h_patch_n)]
+def get_patches(data, upper_left, s, h_patch_n, w_patch_n):
+    patches = [[0] * w_patch_n for _ in range(h_patch_n)]
     for i in range(h_patch_n):
         for j in range(w_patch_n):
-            patches[i][j] = image[upper_left[i][j][0]:upper_left[i][j][0]+s, upper_left[i][j][1]:upper_left[i][j][1]+s]
+            patches[i][j] = data[upper_left[i][j][0]:upper_left[i][j][0]+s, upper_left[i][j][1]:upper_left[i][j][1]+s]
     patches = np.array(patches)
     print(patches.shape)
     return patches
