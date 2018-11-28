@@ -23,7 +23,7 @@ print(Y_augmented.shape)
 # now buld the GP model as normal
 m = gpflow.models.VGP(X_augmented, Y_augmented, kern=kern, likelihood=lik, num_latent=1)
 
-gpflow.train.ScipyOptimizer().minimize(m, maxiter=2000, disp=True)
+gpflow.train.ScipyOptimizer().minimize(m, maxiter=100, disp=True)
 
 
 def plot_gp(x, mu, var, color='k'):
@@ -38,12 +38,12 @@ def plot(m):
     # line, = plt.plot(X1, Y1, 'x', mew=2)
     mu, var = m.predict_f(np.hstack((np.hstack((X1, X2)), np.zeros_like(X1))))
     plot_gp(Y1, mu, var)
-    print(mu)
+    print(mu.shape)
 
     # line, = plt.plot(X2, Y2, 'x', mew=2)
     mu, var = m.predict_f(np.hstack((np.hstack((X1, X2)), np.ones_like(X1))))
     plot_gp(Y2, mu, var)
-    print(mu)
+    print(mu.shape)
 
 
 plot(m)

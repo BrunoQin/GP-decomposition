@@ -47,7 +47,7 @@ def stage2(h_r_blur, l_r, scale=3, overlap=1/3, sl=20, sh=40):
     # what is rank?
     coreg = gpflow.kernels.Coregion(1, output_dim=h_patch_n*w_patch_n, rank=1, active_dims=[8])
     kern = k1 * coreg
-    m = gpflow.models.SVGP(X_train, Y_train, kern=kern, likelihood=lik, num_latent=1)
+    m = gpflow.models.VGP(X_train, Y_train, kern=kern, likelihood=lik, num_latent=1)
     gpflow.train.ScipyOptimizer().minimize(m, maxiter=30000, disp=True)
 
     ii = 0
@@ -57,7 +57,7 @@ def stage2(h_r_blur, l_r, scale=3, overlap=1/3, sl=20, sh=40):
             Xt, yt = util.get_set(h_blur_patch)
             X_test = np.hstack((Xt, np.ones((Xt.shape[0], 1)) * ii))
 
-            mu, var = m.predict_y(X_test)
+            mu, var = m.predict_f(X_test)
             mu = np.reshape(mu, (sh - 2, sh - 2))
             h_blur_patch[1:-1, 1:-1] = mu
             h_blur_patches[i][j] = h_blur_patch

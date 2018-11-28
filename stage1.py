@@ -24,6 +24,8 @@ def stage1(l_r, scale=3, overlap=1/3, sl=20, sh=40):
     X_train = None
     Y_train = None
     ii = 0
+    # h_patch_n = 2
+    # w_patch_n = 2
     for i in range(h_patch_n):
         for j in range(w_patch_n):
             l_patch = l_patches[i][j]
@@ -42,10 +44,12 @@ def stage1(l_r, scale=3, overlap=1/3, sl=20, sh=40):
     lik = gpflow.likelihoods.SwitchedLikelihood([gpflow.likelihoods.Gaussian() for _ in range(h_patch_n * w_patch_n)])
     k1 = gpflow.kernels.Matern32(8, active_dims=[0, 1, 2, 3, 4, 5, 6, 7])
     # what is rank?
-    coreg = gpflow.kernels.Coregion(1, output_dim=h_patch_n*w_patch_n, rank=1, active_dims=[8])
+    coreg = gpflow.kernels.Coregion(1, output_dim=h_patch_n * w_patch_n, rank=1, active_dims=[8])
     kern = k1 * coreg
-    m = gpflow.models.SVGP(X_train, Y_train, kern=kern, likelihood=lik, num_latent=1)
-    gpflow.train.ScipyOptimizer().minimize(m, maxiter=30000, disp=True)
+    # M = 50
+    # Z = X_train[:M, :].copy()
+    m = gpflow.models.VGP(X_train, Y_train, kern=kern, likelihood=lik, num_latent=1)
+    gpflow.train.ScipyOptimizer().minimize(m, maxiter=10, disp=True)
 
     ii = 0
     for i in range(h_patch_n):
@@ -53,8 +57,7 @@ def stage1(l_r, scale=3, overlap=1/3, sl=20, sh=40):
             h_patch = h_b_patches[i][j]
             Xt, yt = util.get_set(h_patch)
             X_test = np.hstack((Xt, np.ones((Xt.shape[0], 1)) * ii))
-
-            mu, var = m.predict_y(X_test)
+            mu, var = m.predict_f(X_test)
             mu = np.reshape(mu, (sh - 2, sh - 2))
             h_patch[1:-1, 1:-1] = mu
             h_b_patches[i][j] = h_patch
