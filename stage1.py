@@ -21,25 +21,44 @@ def stage1(l_r, scale=3, overlap=1/3, sl=20, sh=40):
     l_upper_left = util.get_upper_left_coordinate(lh, lw, sl, h_patch_n, w_patch_n)
     l_patches = util.get_patches(l_r, l_upper_left, sl, h_patch_n, w_patch_n)
 
+    X_train = None
+    Y_train = None
+    ii = 0
     for i in range(h_patch_n):
         for j in range(w_patch_n):
             l_patch = l_patches[i][j]
-            h_patch = h_b_patches[i][j]
             X, y = util.get_set(l_patch)
+
+            if X_train is None:
+                X_train = np.hstack((X, np.zeros((X.shape[0], 1))))
+                Y_train = np.hstack((y, np.zeros_like(y)))
+            else:
+                X_train = np.vstack((X_train, np.hstack((X, np.ones((X.shape[0], 1)) * ii))))
+                Y_train = np.vstack((Y_train, np.hstack((y, np.ones_like(y) * ii))))
+
+            ii = ii + 1
+            print(ii)
+
+    lik = gpflow.likelihoods.SwitchedLikelihood([gpflow.likelihoods.Gaussian() for _ in range(h_patch_n * w_patch_n)])
+    k1 = gpflow.kernels.Matern32(8, active_dims=[0, 1, 2, 3, 4, 5, 6, 7])
+    # what is rank?
+    coreg = gpflow.kernels.Coregion(1, output_dim=h_patch_n*w_patch_n, rank=1, active_dims=[8])
+    kern = k1 * coreg
+    m = gpflow.models.SVGP(X_train, Y_train, kern=kern, likelihood=lik, num_latent=1)
+    gpflow.train.ScipyOptimizer().minimize(m, maxiter=30000, disp=True)
+
+    ii = 0
+    for i in range(h_patch_n):
+        for j in range(w_patch_n):
+            h_patch = h_b_patches[i][j]
             Xt, yt = util.get_set(h_patch)
+            X_test = np.hstack((Xt, np.ones((Xt.shape[0], 1)) * ii))
 
-            M = 50
-            kern = gpflow.kernels.RBF(X.shape[1], 1)
-            Z = X[:M, :].copy()
-            m = gpflow.models.SVGP(X, y, kern, gpflow.likelihoods.Gaussian(), Z, minibatch_size=len(X))
-
-            gpflow.train.ScipyOptimizer().minimize(m)
-            mu, var = m.predict_y(Xt)
-
+            mu, var = m.predict_y(X_test)
             mu = np.reshape(mu, (sh - 2, sh - 2))
             h_patch[1:-1, 1:-1] = mu
-
             h_b_patches[i][j] = h_patch
+            ii = ii + 1
 
     h_r_blur = np.zeros((hh, hw))
     h_r_blur = util.construct_patch(h_r_blur, h_b_patches, h_b_upper_left, sh, h_patch_n, w_patch_n)
