@@ -1,5 +1,7 @@
 import numpy as np
 from sklearn.feature_extraction import image
+from skimage import restoration
+from scipy.signal import convolve2d as conv2
 
 
 def get_patches(data, upper_left, s, h_patch_n, w_patch_n):
@@ -70,3 +72,11 @@ def construct_patch(reconstruct, patches, upper_left, s, h_patch_n, w_patch_n):
             reconstruct[upper_left[i][j][0]:upper_left[i][j][0]+s, :] = temp
         last_rov = np.array(range(upper_left[i][j][0]+s))
     return reconstruct
+
+
+def de_blur(data_blur):
+    psf = np.ones((5, 5)) / 25
+    data_blur = conv2(data_blur, psf, 'same')
+    data_blur += 0.1 * data_blur.std() * np.random.standard_normal(data_blur.shape)
+    deconvolved, _ = restoration.unsupervised_wiener(data_blur, psf)
+    return deconvolved

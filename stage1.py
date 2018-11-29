@@ -65,6 +65,6 @@ def stage1(l_r, scale=3, overlap=1/3, sl=20, sh=40):
 
     h_r_blur = np.zeros((hh, hw))
     h_r_blur = util.construct_patch(h_r_blur, h_b_patches, h_b_upper_left, sh, h_patch_n, w_patch_n)
-    np.testing.assert_array_equal(h_b, h_r_blur)
+    # np.testing.assert_array_equal(h_b, h_r_blur)
 
     return h_r_blur
