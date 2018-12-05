@@ -19,8 +19,10 @@ def _predict(x,y,lock,graph = None):
         model.compile()
         # training etc here
         ystar,varstar = model.predict_f(x)
+        print("before: 4%f" % np.sum(ystar - y))
         gp.train.ScipyOptimizer().minimize(model)
         ystar,varstar = model.predict_f(x)
+        print("after: 4%f" % np.sum(ystar - y))
     return ystar, varstar
 
 
@@ -39,6 +41,5 @@ def async(X,Y, max_workers):
 
 
 if __name__ == '__main__':
-    async(np.random.normal(size=[20,100,1]),
-          np.random.normal(size=[20,100,1]),
-          8)
+    x = np.random.normal(size=[20,100,1])
+    async(x, x, 8)
