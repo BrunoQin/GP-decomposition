@@ -9,9 +9,7 @@ import util
 
 
 def _predict(x, y, xt, id, lock, graph=None):
-    # lock is created in parent thread and passed to all children
     with tf.Session(graph=tf.Graph()) as sess:
-        #Lock on the AutoBuild global
         lock.acquire()
         try:
             with gpflow.defer_build():
@@ -20,16 +18,12 @@ def _predict(x, y, xt, id, lock, graph=None):
         finally:
             lock.release()
         model.compile()
-        # training etc here
         gpflow.train.ScipyOptimizer().minimize(model)
         ystar, varstar = model.predict_f(xt)
     return id, ystar
 
 
 def async(X, Y, Xt, max_workers=20):
-    ###
-    # Possibly do some GP optimization etc.
-    # then run some gpflow operations in threads
     jobs = []
     graph = tf.Graph
     lock = Lock()
