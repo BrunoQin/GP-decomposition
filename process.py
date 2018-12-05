@@ -8,7 +8,7 @@ from threading import Lock
 import util
 
 
-def _predict(x, y, xt, lock, graph=None):
+def _predict(x, y, xt, id, lock, graph=None):
     # lock is created in parent thread and passed to all children
     with tf.Session(graph=tf.Graph()) as sess:
         #Lock on the AutoBuild global
@@ -23,7 +23,7 @@ def _predict(x, y, xt, lock, graph=None):
         # training etc here
         gpflow.train.ScipyOptimizer().minimize(model)
         ystar, varstar = model.predict_f(xt)
-    return ystar
+    return id, ystar
 
 
 def async(X, Y, Xt, max_workers=20):
@@ -35,9 +35,11 @@ def async(X, Y, Xt, max_workers=20):
     lock = Lock()
     with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         for id, (x, y, xt) in enumerate(zip(X, Y, Xt)):
-            jobs.append(executor.submit(_predict, x, y, xt, lock, graph=graph))
+            jobs.append(executor.submit(_predict, x, y, xt, id, lock, graph=graph))
         futures.wait(jobs)
-        results = [j.result() for j in jobs]
+        results = {}
+        for j in jobs:
+            results[j.result()[0]] = j.result()[1]
     return results
 
 
@@ -60,6 +62,8 @@ def stage1(l_r, scale=3, overlap=1/3, sl=20, sh=40):
     X_train = []
     Y_train = []
     X_test = []
+    h_patch_n = 1
+    w_patch_n = 1
     for i in range(h_patch_n):
         for j in range(w_patch_n):
             l_patch = l_patches[i][j]
@@ -75,6 +79,7 @@ def stage1(l_r, scale=3, overlap=1/3, sl=20, sh=40):
     X_test = np.array(X_test)
 
     results = async(X_train, Y_train, X_test, 8)
+    print(results)
 
     ii = 0
     for i in range(h_patch_n):
@@ -96,7 +101,7 @@ def stage1(l_r, scale=3, overlap=1/3, sl=20, sh=40):
 def stage2(h_r_blur, l_r, scale=3, overlap=1/3, sl=20, sh=40):
     h_r_blur = np.array(h_r_blur)
     hh, hw = h_r_blur.shape
-    l_r_blur = cv2.resize(h_r_blur, (hh/scale, hw/scale), interpolation = cv2.INTER_CUBIC)
+    l_r_blur = cv2.resize(h_r_blur, (round(hh/scale), round(hw/scale)), interpolation = cv2.INTER_CUBIC)
     l_r_blur = util.de_blur(l_r_blur)
     l_r_blur = np.array(l_r_blur)
 
@@ -114,8 +119,8 @@ def stage2(h_r_blur, l_r, scale=3, overlap=1/3, sl=20, sh=40):
     X_train = []
     Y_train = []
     X_test = []
-    h_patch_n = 2
-    w_patch_n = 2
+    h_patch_n = 1
+    w_patch_n = 1
     for i in range(h_patch_n):
         for j in range(w_patch_n):
             l_patch = l_patches[i][j]
@@ -133,6 +138,7 @@ def stage2(h_r_blur, l_r, scale=3, overlap=1/3, sl=20, sh=40):
     X_test = np.array(X_test)
 
     results = async(X_train, Y_train, X_test)
+    print(results)
 
     ii = 0
     for i in range(h_patch_n):
